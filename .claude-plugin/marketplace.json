@@ -1,0 +1,13 @@
+{
+  "name": "mindspore-skills",
+  "owner": {
+    "name": "MindSpore"
+  },
+  "plugins": [
+    {
+      "name": "mindspore-skills",
+      "source": ".",
+      "description": "All MindSpore skills - CPU operator development, testing, and optimization"
+    }
+  ]
+}

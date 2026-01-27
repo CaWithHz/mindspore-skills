@@ -1,0 +1,12 @@
+{
+  "name": "mindspore-skills",
+  "description": "Skills for MindSpore deep learning framework - operator development, testing, and optimization",
+  "version": "1.0.0",
+  "skills": [
+    {
+      "name": "cpu-builder",
+      "path": "./skills/cpu-builder",
+      "description": "Build MindSpore CPU operators by adapting ATen (libtorch) operators"
+    }
+  ]
+}
