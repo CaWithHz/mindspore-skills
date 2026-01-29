@@ -11,7 +11,7 @@ Compatible with **Claude Code**, **OpenCode**, **Gemini CLI**, and **Codex**.
 Register the marketplace and install:
 
 ```
-/plugin marketplace add vigo999/mindspore-skills
+/plugin marketplace add bleubleub/mindspore-skills
 /plugin install cpu-plugin-builder@mindspore-skills
 ```
 
@@ -33,7 +33,7 @@ Then use slash commands:
 Clone to your global config:
 
 ```bash
-git clone https://github.com/vigo999/mindspore-skills.git ~/.config/opencode/mindspore-skills
+git clone https://github.com/bleubleub/mindspore-skills.git ~/.config/opencode/mindspore-skills
 ln -s ~/.config/opencode/mindspore-skills/skills ~/.config/opencode/skills
 ln -s ~/.config/opencode/mindspore-skills/commands ~/.config/opencode/commands
 ```
@@ -41,7 +41,7 @@ ln -s ~/.config/opencode/mindspore-skills/commands ~/.config/opencode/commands
 Or for a specific project:
 
 ```bash
-git clone https://github.com/vigo999/mindspore-skills.git .opencode
+git clone https://github.com/bleubleub/mindspore-skills.git .opencode
 ```
 
 Then in OpenCode:
@@ -57,13 +57,13 @@ See [OpenCode Skills docs](https://opencode.ai/docs/skills) for more details.
 Install as an extension:
 
 ```bash
-gemini extensions install https://github.com/vigo999/mindspore-skills.git --consent
+gemini extensions install https://github.com/bleubleub/mindspore-skills.git --consent
 ```
 
 Or from local clone:
 
 ```bash
-git clone https://github.com/vigo999/mindspore-skills.git
+git clone https://github.com/bleubleub/mindspore-skills.git
 gemini extensions install ./mindspore-skills --consent
 ```
 
@@ -74,7 +74,7 @@ See [Gemini CLI extensions docs](https://geminicli.com/docs/extensions/) for mor
 Clone to your project root:
 
 ```bash
-git clone https://github.com/vigo999/mindspore-skills.git .mindspore-skills
+git clone https://github.com/bleubleub/mindspore-skills.git .mindspore-skills
 ```
 
 Codex reads `AGENTS.md` automatically. Verify with:
