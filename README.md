@@ -12,20 +12,23 @@ Register the marketplace and install:
 
 ```
 /plugin marketplace add vigo999/mindspore-skills
-/plugin install cpu-plugin-builder@mindspore-skills
+/plugin install mindspore-skills@mindspore-skills
 ```
 
-Or install all skills:
+Then use slash command:
 
 ```
-/plugin install mindspore-skills
-```
-
-Then use slash commands:
-
-```
-/ms-api-builder
-/ms-cpu-plugin-builder
+/mindspore-skills:ms-cpu-builder
+/mindspore-skills:ms-cpu-plugin-builder
+/mindspore-skills:ms-api-builder
+/mindspore-skills:ms-cpu-native-builder
+/mindspore-skills:ms-gpu-builder
+/mindspore-skills:ms-hf-diffusers-migrate
+/mindspore-skills:ms-hf-migrate
+/mindspore-skills:ms-hf-transformers-migrate
+/mindspore-skills:ms-migrate
+/mindspore-skills:ms-model-migrate 
+/mindspore-skills:ms-npu-builder
 ```
 
 ### OpenCode
