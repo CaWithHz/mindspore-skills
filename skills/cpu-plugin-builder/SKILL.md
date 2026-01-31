@@ -42,7 +42,18 @@ Reference files:
 - `aten/src/ATen/native/native_functions.yaml` for operator definitions
 - `aten/src/ATen/templates/RedispatchFunctions.h` for `_out` variants
 
-### Step 3: Implement the Kernel
+### Step 3: Handle Backward Operators
+
+Check what gradient operator is required:
+
+1. **Locate bprop definition**: Search `REG_BPROP_BUILDER("<PrimName>")` in `mindspore/ccsrc/frontend/expander/grad/`
+2. **Check for dedicated Grad primitive**: Look for `Emit("XXXGrad", ...)` calls
+3. **Composed gradients**: If bprop uses basic ops (Mul, Add, Cos), ensure those ops are available. If not, need to implement them correctly.
+
+If `XXXGrad` is needed, implement it similarly in `op_plugin/ops/kernel/<op_name>_grad.cc`.
+
+
+### Step 4: Implement the Kernel
 
 Create the kernel file at `op_plugin/ops/kernel/<op_name>.cc`:
 
@@ -81,17 +92,6 @@ extern "C" int OpName(int nparam, void **params, int *ndims, int64_t **shapes,
 }  // namespace aten_op
 }  // namespace op_plugin
 ```
-
-### Step 4: Handle Backward Operators (if needed)
-
-Check if a gradient operator is required:
-
-1. **Locate bprop definition**: Search `REG_BPROP_BUILDER("<PrimName>")` in `mindspore/ccsrc/frontend/expander/grad/`
-2. **Check for dedicated Grad primitive**: Look for `Emit("XXXGrad", ...)` calls
-3. **Composed gradients**: If bprop uses basic ops (Mul, Add, Cos), ensure those ops are available
-
-If `XXXGrad` is needed, implement it similarly in `op_plugin/ops/kernel/<op_name>_grad.cc`.
-
 ### Step 5: Build the Plugin
 
 ```bash
