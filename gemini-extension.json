@@ -35,8 +35,13 @@
     },
     {
       "name": "hf-transformers-migrate",
-      "description": "Migrate HF transformers models to mindone.transformers",
+      "description": "Migrate Hugging Face transformers models to mindone.transformers",
       "path": "skills/hf-transformers-migrate/SKILL.md"
+    },
+    {
+      "name": "hf-transformers-migrate-test",
+      "description": "Generate minimal MindOne transformer tests for migrated models",
+      "path": "skills/hf-transformers-migrate-test/SKILL.md"
     },
     {
       "name": "model-migrate",

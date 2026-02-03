@@ -8,15 +8,23 @@ This repository contains agent skills for MindSpore development.
 - `.claude-plugin/marketplace.json` - Marketplace registry for Claude Code
 - `AGENTS.md` - Universal agent instructions for Codex/other tools
 
-## Validation
+## Validation and maintenance
 
-When adding or modifying skills, ensure:
+When adding a new skill:
+1. Add `skills/<skill-name>/SKILL.md` with matching frontmatter and directory name
+2. Add a slash command in `commands/<command-name>.md` if needed
+3. Ensure SKILL.md has valid YAML frontmatter with `name` and `description`
+4. Ensure the skill name in SKILL.md matches the directory name
+5. Update `AGENTS.md` (skill table + activation triggers)
+6. Update `README.md` (skill list and commands)
+7. Update `gemini-extension.json` with name/path/description
+8. Ensure `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` align with the skill list
 
-1. SKILL.md has valid YAML frontmatter with `name` and `description`
-2. Skill name in SKILL.md matches the directory name
-3. plugin.json exists and references the skill correctly
-4. marketplace.json is updated with new skills
-5. AGENTS.md includes the skill in the table
+When modifying an existing skill:
+1. Update `skills/<skill-name>/SKILL.md` and any referenced files
+2. Refresh `AGENTS.md` triggers if scope/keywords changed
+3. Update `README.md` if descriptions or commands changed
+4. Update `gemini-extension.json` if name/path/description changed
 
 ## Testing Skills
 

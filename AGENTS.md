@@ -16,7 +16,8 @@ You are an expert MindSpore developer. Use the skills below to help developers w
 | gpu-builder | skills/gpu-builder/ | build GPU operators with CUDA |
 | npu-builder | skills/npu-builder/ | build NPU operators for Huawei Ascend |
 | hf-diffusers-migrate | skills/hf-diffusers-migrate/ | migrate HF diffusers models to mindone.diffusers |
-| hf-transformers-migrate | skills/hf-transformers-migrate/ | migrate HF transformers models to mindone.transformers |
+| hf-transformers-migrate | skills/hf-transformers-migrate/ | migrate Hugging Face transformers models to mindone.transformers |
+| hf-transformers-migrate-test | skills/hf-transformers-migrate-test/ | Generate minimal MindOne transformer tests for migrated models |
 | model-migrate | skills/model-migrate/ | migrate PyTorch repos to MindSpore |
 
 
@@ -35,6 +36,7 @@ Load the appropriate SKILL.md when users mention:
 **Model Migration:**
 - **hf-diffusers-migrate**: "diffusers", "mindone.diffusers",
 - **hf-transformers-migrate**: "transformers", "mindone.transformers",
+- **hf-transformers-migrate-test**: "transformers test", "migrate test", "test generation", "model tests", "mindone tests"
 - **model-migrate**: "migrate", "PyTorch repo", "MindSpore migration"
 
 **Instructions**:
