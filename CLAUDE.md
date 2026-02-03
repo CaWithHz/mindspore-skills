@@ -24,8 +24,7 @@ Test locally before committing:
 
 ```bash
 # Claude Code
-/plugin install ./skills/cpu-builder
 
 # Verify activation
-/cpu-builder "describe the workflow"
+/cpu-plugin-builder "describe the workflow"
 ```

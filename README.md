@@ -18,17 +18,16 @@ Register the marketplace and install:
 Then use slash command:
 
 ```
-/mscode:cpu-builder
-/mmscode:cpu-plugin-builder
-/mscode:api-builder
+/mscode:cpu-plugin-builder
 /mscode:cpu-native-builder
 /mscode:gpu-builder
 /mscode:hf-diffusers-migrate
 /mscode:hf-migrate
 /mscode:hf-transformers-migrate
 /mscode:migrate
-/mscode:model-migrate 
+/mscode:model-migrate
 /mscode:npu-builder
+/mscode:api-helper
 ```
 
 ### OpenCode
@@ -50,7 +49,7 @@ git clone https://github.com/vigo999/mindspore-skills.git .opencode
 Then in OpenCode:
 
 ```
-/api-builder
+/cpu-plugin-builder
 ```
 
 See [OpenCode Skills docs](https://opencode.ai/docs/skills) for more details.
@@ -94,6 +93,7 @@ See [Codex AGENTS guide](https://developers.openai.com/codex/guides/agents-md) f
 
 | Skill | Description |
 |-------|-------------|
+| `api-helper` | Find API call chains and operator wiring in MindSpore codebase |
 | `cpu-plugin-builder` | Build CPU operators via ATen/libtorch adaptation |
 | `cpu-native-builder` | Build native CPU kernels with Eigen/SLEEF |
 | `gpu-builder` | Build GPU operators with CUDA |
@@ -113,8 +113,7 @@ See [Codex AGENTS guide](https://developers.openai.com/codex/guides/agents-md) f
 
 | Command | Description |
 |---------|-------------|
-| `/api-builder` | Platform router (CPU/GPU/NPU) |
-| `/cpu-builder` | CPU approach router (plugin/native) |
+| `/api-helper` | API chain discovery workflow |
 | `/cpu-plugin-builder` | ATen adaptation workflow |
 | `/cpu-native-builder` | Native kernel workflow |
 | `/gpu-builder` | CUDA kernel workflow |
@@ -124,8 +123,8 @@ See [Codex AGENTS guide](https://developers.openai.com/codex/guides/agents-md) f
 
 | Command | Description |
 |---------|-------------|
-| `/migrate` | Migration router (HF/third-party) |
-| `/hf-migrate` | HF library router (diffusers/transformers) |
+| `/migrate` | Migration router (HF/third-party), routing only |
+| `/hf-migrate` | HF library router (diffusers/transformers), routing only |
 | `/hf-diffusers-migrate` | HF diffusers migration workflow |
 | `/hf-transformers-migrate` | HF transformers migration workflow |
 | `/model-migrate` | PyTorch repo migration workflow |
@@ -140,22 +139,13 @@ See [Codex AGENTS guide](https://developers.openai.com/codex/guides/agents-md) f
 > Help me implement the linspace operator for MindSpore CPU
 ```
 
-### Choose platform interactively
-
-```
-/api-builder
-
-> I need to build a softmax operator
-```
-
 ## Repository Structure
 
 ```
 mindspore-skills/
 ├── .claude-plugin/          # Claude Code plugin config
 ├── commands/                # Slash commands
-│   ├── api-builder.md       # Operator platform router
-│   ├── cpu-builder.md       # CPU approach router
+│   ├── api-helper.md        # API chain discovery
 │   ├── migrate.md           # Migration router
 │   ├── hf-migrate.md        # HF library router
 │   └── ...
@@ -177,7 +167,11 @@ mindspore-skills/
 2. Add your skill to `skills/<skill-name>/SKILL.md`
 3. Add a command to `commands/<command-name>.md`
 4. Update `AGENTS.md` with the new skill
-5. Submit a pull request
+5. Run `python tools/check_consistency.py`
+6. (Optional) Install git hooks with `python tools/install_git_hooks.py`
+7. Submit a pull request
+
+Tip: set up hooks with `make hooks` (see Makefile).
 
 ## License
 

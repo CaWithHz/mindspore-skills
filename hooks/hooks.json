@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "description": "Detect mint.* or tensor.* operator questions and guide to api-helper skill",
+        "matcher": "mint\\.|tensor\\.|backward operator|forward operator|operator.*backward|operator.*forward|what is.*operator|ACosGrad|AsinGrad|operators.*mint",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🔍 Detected operator question. Using api-helper skill to trace implementation...'"
+          }
+        ]
+      }
+    ]
+  }
+}
