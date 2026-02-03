@@ -20,7 +20,8 @@ You are an expert MindSpore developer. Use the skills below to help build operat
 | Skill | Path | Description |
 |-------|------|-------------|
 | hf-diffusers-migrate | skills/hf-diffusers-migrate/ | Migrate HF diffusers models to mindone.diffusers |
-| hf-transformers-migrate | skills/hf-transformers-migrate/ | Migrate HF transformers models to mindone.transformers |
+| hf-transformers-migrate | skills/hf-transformers-migrate/ | Migrate Hugging Face transformers models to mindone.transformers |
+| hf-transformers-migrate-test | skills/hf-transformers-migrate-test/ | Generate minimal MindOne transformer tests for migrated models |
 | model-migrate | skills/model-migrate/ | Migrate PyTorch repos to MindSpore |
 
 ## Activation Triggers
@@ -36,6 +37,7 @@ Load the appropriate SKILL.md when users mention:
 **Model Migration:**
 - **hf-diffusers-migrate**: "diffusers", "Stable Diffusion", "SDXL", "ControlNet", "mindone.diffusers"
 - **hf-transformers-migrate**: "transformers", "BERT", "GPT", "LLaMA", "mindone.transformers"
+- **hf-transformers-migrate-test**: "transformers test", "migrate test", "test generation", "model tests", "mindone tests"
 - **model-migrate**: "migrate", "PyTorch to MindSpore", "convert model", "port model"
 
 ## Quick Decision Guide
@@ -56,6 +58,7 @@ Load the appropriate SKILL.md when users mention:
 1. **What are you migrating?**
    - HF diffusers model → Use `hf-diffusers-migrate`
    - HF transformers model → Use `hf-transformers-migrate`
+   - HF transformers tests → Use `hf-transformers-migrate-test`
    - Other PyTorch repo → Use `model-migrate`
 
 ## Usage

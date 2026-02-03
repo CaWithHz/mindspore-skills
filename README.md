@@ -104,7 +104,8 @@ See [Codex AGENTS guide](https://developers.openai.com/codex/guides/agents-md) f
 | Skill | Description |
 |-------|-------------|
 | `hf-diffusers-migrate` | Migrate HF diffusers models to mindone.diffusers |
-| `hf-transformers-migrate` | Migrate HF transformers models to mindone.transformers |
+| `hf-transformers-migrate` | Migrate Hugging Face transformers models to mindone.transformers |
+| `hf-transformers-migrate-test` | Generate minimal MindOne transformer tests for migrated models |
 | `model-migrate` | Migrate PyTorch repos to MindSpore |
 
 ## Available Commands
@@ -166,6 +167,7 @@ mindspore-skills/
 │   ├── npu-builder/         # Ascend NPU operators
 │   ├── hf-diffusers-migrate/   # HF diffusers migration
 │   ├── hf-transformers-migrate/ # HF transformers migration
+│   ├── hf-transformers-migrate-test/ # HF transformers test generation after migration
 │   └── model-migrate/       # PyTorch repo migration
 ├── AGENTS.md                # Codex instructions
 └── gemini-extension.json    # Gemini CLI config
@@ -173,11 +175,21 @@ mindspore-skills/
 
 ## Contributing
 
-1. Fork this repository
-2. Add your skill to `skills/<skill-name>/SKILL.md`
-3. Add a command to `commands/<command-name>.md`
-4. Update `AGENTS.md` with the new skill
-5. Submit a pull request
+Contributions are welcome. Please submit a pull request.
+
+When adding a new skill:
+1. Add `skills/<skill-name>/SKILL.md` with matching frontmatter and directory name
+2. Add a slash command in `commands/<command-name>.md` if needed
+3. Update `AGENTS.md` (skill table + activation triggers)
+4. Update `README.md` (skill list and commands)
+5. Update `gemini-extension.json` with name/path/description
+6. Update `.claude-plugin/marketplace.json` if skills or metadata changed
+
+When modifying an existing skill:
+1. Update `skills/<skill-name>/SKILL.md` and any referenced files
+2. Refresh `AGENTS.md` triggers if scope/keywords changed
+3. Update `README.md` if descriptions or commands changed
+4. Update `gemini-extension.json` if name/path/description changed
 
 ## License
 
