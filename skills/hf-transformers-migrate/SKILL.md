@@ -48,12 +48,16 @@ The intended files are:
 2. Do single file in-place conversion for the files. The fixed mapping script is within this skill folders.
 
 Single file in-place:
-```
+```bash
 python tools/auto_convert.py \
   --src_file path/to/file.py --inplace
 ```
-<NOTES> install requirements of the auto_convert tool first. </NOTES>
-<MUST> Run auto_convert script before any manual edits. </MUST>
+<NOTES> Install requirements of the auto_convert tool first. </NOTES>
+```bash
+pip install -r tools/requirements.txt
+```
+
+<MUST> MUST: Run auto_convert script before any manual edits. </MUST>
 
 ### Step 3. Manual fix checklist
 
@@ -76,20 +80,20 @@ python tools/auto_convert.py \
 <BEFORE>
 
 ```python
-    def _dynamic_frequency_update(self, position_ids, device):
-    	seq_len = mint.max(position_ids) + 1
-    	if seq_len > self.max_seq_len_cached:  # growth
-        	inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device, seq_len=seq_len)
-            self.register_buffer("inv_freq", inv_freq, persistent=False)  # TODO joao: may break with compilation
-        	self.max_seq_len_cached = seq_len
- 
-    	if seq_len < self.original_max_seq_len and self.max_seq_len_cached > self.original_max_seq_len:  # reset
-            self.original_inv_freq = self.original_inv_freq.to(device)
-            self.register_buffer("inv_freq", self.original_inv_freq, persistent=False)
-        	self.max_seq_len_cached = self.original_max_seq_len
-        ...
-    	device_type = x.device.type
-    	device_type = device_type if isinstance(device_type, str) and device_type != "mps" else "cpu"	
+def _dynamic_frequency_update(self, position_ids, device):
+    seq_len = mint.max(position_ids) + 1
+    if seq_len > self.max_seq_len_cached:  # growth
+        inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device, seq_len=seq_len)
+        self.register_buffer("inv_freq", inv_freq, persistent=False)  # TODO joao: may break with compilation
+        self.max_seq_len_cached = seq_len
+
+    if seq_len < self.original_max_seq_len and self.max_seq_len_cached > self.original_max_seq_len:  # reset
+        self.original_inv_freq = self.original_inv_freq.to(device)
+        self.register_buffer("inv_freq", self.original_inv_freq, persistent=False)
+        self.max_seq_len_cached = self.original_max_seq_len
+    ...
+    device_type = x.device.type
+    device_type = device_type if isinstance(device_type, str) and device_type != "mps" else "cpu"	
 ```
 
 <AFTER>
