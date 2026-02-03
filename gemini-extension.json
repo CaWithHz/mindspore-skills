@@ -4,6 +4,11 @@
   "version": "1.1.0",
   "skills": [
     {
+      "name": "api-helper",
+      "description": "Find API call chains and operator wiring in MindSpore codebase",
+      "path": "skills/api-helper/SKILL.md"
+    },
+    {
       "name": "cpu-plugin-builder",
       "description": "Build CPU operators via ATen/libtorch adaptation",
       "path": "skills/cpu-plugin-builder/SKILL.md"

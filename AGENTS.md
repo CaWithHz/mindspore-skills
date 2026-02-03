@@ -1,6 +1,6 @@
 # MindSpore Development Agent
 
-You are an expert MindSpore developer. Use the skills below to help build operators and migrate models.
+You are an expert MindSpore developer. Use the skills below to help developers work better on MindSpore
 
 **IMPORTANT**: Read the appropriate SKILL.md file when the user's task matches a skill description.
 
@@ -10,56 +10,37 @@ You are an expert MindSpore developer. Use the skills below to help build operat
 
 | Skill | Path | Description |
 |-------|------|-------------|
-| cpu-plugin-builder | skills/cpu-plugin-builder/ | Build CPU operators via ATen/libtorch in mindspore_op_plugin |
-| cpu-native-builder | skills/cpu-native-builder/ | Build native CPU kernels with Eigen/SLEEF |
-| gpu-builder | skills/gpu-builder/ | Build GPU operators with CUDA |
-| npu-builder | skills/npu-builder/ | Build NPU operators for Huawei Ascend |
-
-### Model Migration
-
-| Skill | Path | Description |
-|-------|------|-------------|
-| hf-diffusers-migrate | skills/hf-diffusers-migrate/ | Migrate HF diffusers models to mindone.diffusers |
-| hf-transformers-migrate | skills/hf-transformers-migrate/ | Migrate Hugging Face transformers models to mindone.transformers |
+| api-helper | skills/api-helper/ | find API call chains and operator wiring in MindSpore codebase |
+| cpu-plugin-builder | skills/cpu-plugin-builder/ | build CPU operators via ATen/libtorch in mindspore_op_plugin |
+| cpu-native-builder | skills/cpu-native-builder/ | build native CPU kernels with Eigen/SLEEF |
+| gpu-builder | skills/gpu-builder/ | build GPU operators with CUDA |
+| npu-builder | skills/npu-builder/ | build NPU operators for Huawei Ascend |
+| hf-diffusers-migrate | skills/hf-diffusers-migrate/ | migrate HF diffusers models to mindone.diffusers |
+| hf-transformers-migrate | skills/hf-transformers-migrate/ | migrate Hugging Face transformers models to mindone.transformers |
 | hf-transformers-migrate-test | skills/hf-transformers-migrate-test/ | Generate minimal MindOne transformer tests for migrated models |
-| model-migrate | skills/model-migrate/ | Migrate PyTorch repos to MindSpore |
+| model-migrate | skills/model-migrate/ | migrate PyTorch repos to MindSpore |
 
-## Activation Triggers
+
+## Active Skills
 
 Load the appropriate SKILL.md when users mention:
+**Operator Questions:**
+- **api-helper**: "mint.*","operator", "forward", "api", "backward", "tensor.*", "mindspore.*"
 
 **Operator Development:**
-- **cpu-plugin-builder**: "ATen", "libtorch", "op_plugin", "mindspore_op_plugin", "mint.*"
-- **cpu-native-builder**: "native kernel", "Eigen", "SLEEF", "CPUKernelMod"
-- **gpu-builder**: "CUDA", "GPU kernel", "cuDNN", "GPU operator"
-- **npu-builder**: "Ascend", "NPU", "CANN", "ACLNN", "TBE"
+- **cpu-plugin-builder**: "ATen", "libtorch", "op_plugin", "mindspore_op_plugin",
+- **cpu-native-builder**: "CPU kernel", "Eigen", "SLEEF", "native CPU",
+- **gpu-builder**: "CUDA", "GPU kernel", "cuDNN",
+- **npu-builder**: "Ascend", "NPU", "aclnn", "AICore",
 
 **Model Migration:**
-- **hf-diffusers-migrate**: "diffusers", "Stable Diffusion", "SDXL", "ControlNet", "mindone.diffusers"
-- **hf-transformers-migrate**: "transformers", "BERT", "GPT", "LLaMA", "mindone.transformers"
+- **hf-diffusers-migrate**: "diffusers", "mindone.diffusers",
+- **hf-transformers-migrate**: "transformers", "mindone.transformers",
 - **hf-transformers-migrate-test**: "transformers test", "migrate test", "test generation", "model tests", "mindone tests"
-- **model-migrate**: "migrate", "PyTorch to MindSpore", "convert model", "port model"
+- **model-migrate**: "migrate", "PyTorch repo", "MindSpore migration"
 
-## Quick Decision Guide
-
-### Operator Development
-
-1. **What platform?**
-   - CPU → Go to step 2
-   - GPU → Use `gpu-builder`
-   - NPU (Ascend) → Use `npu-builder`
-
-2. **Which CPU approach?**
-   - Working in `mindspore_op_plugin/` → Use `cpu-plugin-builder`
-   - Working in `mindspore/` → Use `cpu-native-builder`
-
-### Model Migration
-
-1. **What are you migrating?**
-   - HF diffusers model → Use `hf-diffusers-migrate`
-   - HF transformers model → Use `hf-transformers-migrate`
-   - HF transformers tests → Use `hf-transformers-migrate-test`
-   - Other PyTorch repo → Use `model-migrate`
+**Instructions**:
+ - Do not give direct answers without following the skill workflow
 
 ## Usage
 
