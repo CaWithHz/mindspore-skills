@@ -24,6 +24,7 @@ Then use slash command:
 /mscode:hf-diffusers-migrate
 /mscode:hf-migrate
 /mscode:hf-transformers-migrate
+/mscode:hf-transformers-migrate-test
 /mscode:migrate
 /mscode:model-migrate
 /mscode:npu-builder
@@ -128,6 +129,7 @@ See [Codex AGENTS guide](https://developers.openai.com/codex/guides/agents-md) f
 | `/hf-migrate` | HF library router (diffusers/transformers), routing only |
 | `/hf-diffusers-migrate` | HF diffusers migration workflow |
 | `/hf-transformers-migrate` | HF transformers migration workflow |
+| `/hf-transformers-migrate-test` | HF transformers test generation for migrated models |
 | `/model-migrate` | PyTorch repo migration workflow |
 
 ## Usage Examples

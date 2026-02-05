@@ -24,6 +24,7 @@ must read ./reference/how_to_find_aten_interface.md
 must read ./reference/how_to_write_forward_op.md
 
 ### Step 4: Write the Backward Operator
+must read ./reference/how_to_write_backward_op.md
 
 ### Step 5: Build and run test
 
