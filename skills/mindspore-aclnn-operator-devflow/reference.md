@@ -37,6 +37,7 @@
 - [28. ACLNN 调用链分析与子算子盘点（组合场景）](#28-aclnn-调用链分析与子算子盘点组合场景)
 - [29. 组合实现模式（PyBoost/KBK 多 ACLNN 串联）](#29-组合实现模式pyboostkbk-多-aclnn-串联)
 - [§30. Feature 文档（评审与交付必须产物）](#30-feature-文档评审与交付必须产物)
+- [31. Skill 维护策略](#31-skill-维护策略)
 
 ---
 
@@ -53,6 +54,24 @@ MindSpore / op-plugin 的目录在不同分支可能不一致，优先用搜索�
 - **bprop**：`mindspore/ccsrc/` 下 `bprop` / `grad_*ops.cc`
 - **测试**：`tests/ut/`、`tests/st/`
 - **文档**：英文 function_doc 的 YAML + 中文 `docs/api/api_python/ops/*.rst`
+
+### 1.1 CMake 构建（基于源码分析：新增算子无需改 CMake）
+
+MindSpore 的 `ops/` 构建系统使用 `merge_ops_files()` + `file(GLOB_RECURSE ...)` 自动收集源文件，
+**新增算子只需把文件放到正确目录，不需要修改任何 CMake 文件**。
+
+| 目录 | 收集方式 | 说明 |
+| --- | --- | --- |
+| `ops/infer/ops_func_impl/` | `merge_ops_files` 合并 | Infer 实现 |
+| `ops/kernel/ascend/aclnn/pyboost_impl/customize/` | `merge_ops_files(customize)` 单独合并 | PyBoost Customize |
+| `ops/kernel/ascend/aclnn/kernel_mod_impl/customize/` | 与 kernel_mod_impl 一起被 `merge_ops_files` 合并 | KBK Customize |
+| `ops/kernel/ascend/aclnn/pyboost_impl/auto_generate/` | GLOB 收集 | PyBoost 自动生成 |
+| `ops/kernel/ascend/aclnn/kernel_mod_impl/aclnn_auto_gen/` | GLOB 收集（.gitignore 中，不提交） | KBK 自动生成 |
+
+关键 CMake 文件（仅供理解，不需要修改）：
+- `ops/CMakeLists.txt`：顶层，include `merge_ops.cmake`
+- `ops/cmake/merge_ops.cmake`：`merge_ops_files()` 定义
+- `ops/kernel/ascend/aclnn/CMakeLists.txt`：`add_subdirectory(pyboost_impl)` + `add_subdirectory(kernel_mod_impl)`
 
 ## 2. YAML 设计模板（前向/反向各一份）
 
@@ -263,82 +282,274 @@ dispatch:
 5. 按项目约定重命名入口（常见模式：`OpNameAscendCustomize` / `OpNameGradAscendCustomize`），恢复 YAML 声明。
 6. 删除临时自动生成文件，只保留自定义实现。
 
-## 3. gen_ops.py 常见问题定位
+## 3. gen_ops.py 代码生成机制（基于源码分析）
 
-典型报错与方向：
-- **keys 结构不匹配**：对照已有基础算子 YAML（如 add）调整字段层级。
-- **缺 `py_method`**：补齐 python 暴露相关字段。
-- **function_doc 缺条目**：补齐对应的 doc 节点，保持参数一致。
+**脚本位置**：`mindspore/python/mindspore/ops_generate/gen_ops.py`
+**调用方式**：CMake 构建时由 `cmake/gencode.cmake` 自动调用，也可手动执行：
+```bash
+python mindspore/python/mindspore/ops_generate/gen_ops.py  # 在 MindSpore 根目录执行
+```
 
-提示：Windows 下英文 YAML 文档尽量不要混入中文字符，避免编码问题。
+### 3.1 YAML 允许字段（源自 `gen_constants.py`）
 
-## 4. GeneralInfer（C++）推导约定
+| 顶层字段 | 子字段 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `args` | `dtype`, `default`, `prim_init`, `type_cast`, `arg_handler`, `disable_tensor_to_scalar` | 是 | 参数定义 |
+| `returns` | `dtype`, `inplace`, `type_cast` | 是 | 返回值定义 |
+| `dispatch` | `enable`, `is_comm_op`, `Ascend`, `InternalOpAscend`, `GPU`, `CPU` | 否 | 无则跳过 PyBoost/KBK/auto_grad 生成 |
+| `function` | `name`, `disable` | 否 | `disable: True` 时不生成 `gen_ops_def` 中的函数 |
+| `class` | `name`, `disable` | 否 | `disable: True` 时不生成 `gen_ops_prim` 中的类 |
+| `args_signature` | `rw_write`, `rw_read`, `rw_ref`, `dtype_group` | 否 | 参数签名 |
+| `view` | - | 否 | `True` 时走 view 算子特殊逻辑 |
+| `composite` | - | 否 | `True` 时跳过 PyBoost 生成 |
+| `bprop_expander` | - | 否 | 默认 `True`，使用 bprop expander |
+| `non-differentiable` | - | 否 | 不可微分 |
+| `labels` | - | 否 | 标签 |
+
+### 3.2 路径 1/2 的代码级判断
+
+核心条件：`dispatch.Ascend` 的值（源自 `pyboost_op_cpp_code_generator.py`）。
+
+- **`'default'`（未写 Ascend 字段时的默认值）**→ 路径 1：`AclnnOpCppCodeGenerator.generate_aclnn_op_cpp_code`
+- **非 `'default'` 且非 `'None'`**→ 路径 2：`PyboostOpCppGenerator.generate_customize_op_cpp_code`，生成对 `{Ascend}Customize` 的调用
+- **`'None'`**→ 该设备不生成任何代码
+
+KBK 注册（`aclnn_kernel_register_auto_cc_generator.py`）：只在 `ascend == 'default'` 时自动生成并注册。
+
+### 3.3 生成文件与目标路径
+
+| 类别 | 生成文件 | 目标路径 |
+| --- | --- | --- |
+| Python Primitive | `gen_ops_prim.py` | `python/mindspore/ops/auto_generate/` |
+| Python 函数接口 | `gen_ops_def.py` | `python/mindspore/ops/auto_generate/` |
+| C++ op_def | `gen_ops_def.cc/.h` | `ops/op_def/auto_generate/` |
+| C++ primitive | `gen_ops_primitive_*.h` | `ops/include/primitive/auto_generate/` |
+| PyBoost 核心 | `pyboost_core.cc` | `ccsrc/pynative/forward/pyboost/auto_generate/` |
+| PyBoost Ascend | `pyboost_ascend_ops_*.cc` | `ops/kernel/ascend/aclnn/pyboost_impl/auto_generate/` |
+| KBK 注册 | `aclnn_kernel_register_auto.cc` | `ops/kernel/ascend/aclnn/kernel_mod_impl/auto_generate/` |
+| KBK KernelMod（路径1） | `{op}_aclnn_kernel.h/.cc` | `ops/kernel/ascend/aclnn/kernel_mod_impl/aclnn_auto_gen/` |
+
+### 3.4 常见报错与方向
+
+- **keys 结构不匹配**：对照 `gen_constants.py` 中的 `OP_KEYS`/`ARG_KEYS`/`DISPATCH_KEYS` 检查字段名
+- **function_doc 缺条目**：补齐对应的 doc YAML，保持参数一致
+- **Windows 编码**：英文 YAML 文档不要混入中文字符
+
+## 4. GeneralInfer（C++）推导约定（基于源码分析）
 
 ### 4.1 职责边界
 - 只做**形状/类型推导**；不要做运行时合法性校验（交给 ACLNN/运行时）。
 - 报错使用框架异常宏，错误信息要包含：参数名、期望、实际。
 
-### 4.2 动态 shape / 动态 rank
-> 动态 shape 的完整三分类（InputDynamic / OutputDynamic）见 §27。本节侧重 Infer 推导时的快速回退策略。
+### 4.2 框架入口与实现位置
+- **入口**：`ops::DoGeneralInfer(prim, abstract_list, frontend_func_impl)`（`core/ops/infer_info/infer_info_utils.cc`）
+- **算子实现**：`mindspore/ops/infer/ops_func_impl/{op_name}.cc`
+- **InferInfo 基类**：`core/include/ops/infer_info/infer_info.h`
 
-推荐策略（与 `算子流程/ACLNN_nsa_compress_适配开发经验.md` 一致）：
-- 动态 rank：返回动态秩（`kShapeRankAny` 或项目等价常量）。
-- 推导依赖的关键参数（如 block/stride/seq_len）只要出现 unknown：
-  - 输出对应维度回退为动态维（`kShapeDimAny` 或项目等价常量）
-  - 其余维度沿用输入推导
-- 当关键参数都已知时：尽可能返回精确 shape。
+算子需实现 `OpFuncImpl` 的 `InferShape` 和 `InferType`：
+```cpp
+BaseShapePtr InferShape(const PrimitivePtr &prim,
+                        const std::vector<AbstractBasePtr> &input_args) const override;
+TypePtr InferType(const PrimitivePtr &prim,
+                  const std::vector<AbstractBasePtr> &input_args) const override;
+```
 
-### 4.3 常用 InferInfo API（以项目已有实现为准）
-- `GetScalarValueWithCheck<T>()`：取标量（带检查）
-- `GetArrayValue<T>()` + `HasUnknownValue()`：取 tuple/list
-- `IsNone()`：判断 None
+### 4.3 常用 InferInfo API（源码确认的签名）
 
-不要凭空使用项目里不存在的 API。
+| API | 头文件 | 签名 | 用途 |
+| --- | --- | --- | --- |
+| `GetScalarValueWithCheck<T>()` | `core/include/ops/infer_info/infer_info.h` | `T GetScalarValueWithCheck()` | 取标量（失败则抛异常） |
+| `GetArrayValue<T>()` | `core/include/utils/value_utils.h` | `std::optional<ArrayValue<T>>` | 取 tuple/list |
+| `HasUnknownValue()` | 同上（`ArrayValue` 方法） | `bool HasUnknownValue() const` | 判断是否含 unknown 元素 |
+| `IsNone()` | `core/include/ops/infer_info/infer_info.h` | `virtual bool IsNone() = 0` | 判断 None |
+| `CheckAndConvertUtils::*` | `core/include/utils/check_convert_utils.h` | 静态方法 | `CheckInteger`、`CheckTypeValid` 等 |
 
-## 5. PyBoost（Pynative）实现要点
+### 4.4 动态 shape / 动态 rank
+> 完整三分类（InputDynamic / OutputDynamic）见 §27。
 
-### 5.1 输入参数转换
-- tuple/list：建议统一转为 `std::vector<int64_t>` 再传给 ACLNN。
-- 可选输入：若允许 None，需定义"None 语义"，并在 PyBoost/Infer/KBK 同步处理。
+关键常量（`abstract::Shape` 中定义）：
+- **动态维**：`kShapeDimAny`（-2）——某个维度未知
+- **动态秩**：`kShapeRankAny`（-1）——维度数量未知
 
-### 5.2 调用惯例
-以项目已有 ACLNN 封装为准（例如 `LAUNCH_ACLNN`/`RunOp`），保持风格一致。
+推荐策略：
+- 动态 rank：返回 `ShapeVector{kShapeRankAny}`
+- 关键参数（如 block/stride/seq_len）出现 unknown 时，对应维度回退为 `kShapeDimAny`
+- 关键参数都已知时，返回精确 shape
 
-## 6. KBK（Graph）kernel 要点
+典型写法：
+```cpp
+auto value_opt = GetArrayValue<int64_t>(input_args[idx]);
+if (!value_opt.has_value() || value_opt.value().HasUnknownValue()) {
+  return std::make_shared<abstract::TensorShape>(ShapeVector{kShapeDimAny});
+}
+auto vec = value_opt.value().ToVector();
+```
+
+## 5. PyBoost（Pynative）实现要点（基于源码分析）
+
+### 5.1 目录结构
+
+| 场景 | 路径 | 命名 |
+| --- | --- | --- |
+| 路径 1（自动生成） | `ops/kernel/ascend/aclnn/pyboost_impl/auto_generate/` | `pyboost_ascend_ops_*.cc` |
+| 路径 2（Customize） | `ops/kernel/ascend/aclnn/pyboost_impl/customize/` | `{op_name}.cc` / `{op_name}.h` |
+
+### 5.2 注册宏
+```cpp
+// ccsrc/include/pynative/utils/pyboost/op_register.h
+MS_REG_PYBOOST_OP(Ascend, OpName);  // 将 OpNameAscend 注册到 OpFactory
+```
+
+### 5.3 Customize 函数签名
+```cpp
+// 单输出
+tensor::TensorPtr {OpName}AscendCustomize(
+    const std::shared_ptr<OpRunner> &op, const TensorPtr &arg1, ...);
+// 多输出
+std::vector<tensor::TensorPtr> {OpName}AscendCustomize(
+    const std::shared_ptr<OpRunner> &op, ...);
+```
+
+### 5.4 标准实现流程（6 步）
+```cpp
+tensor::TensorPtr XxxAscendCustomize(const std::shared_ptr<OpRunner> &op, ...) {
+  // 1. 推断输出 shape/dtype
+  OpRunner::InferOpOutput(op, arg1, arg2, ...);
+  // 2-3. 准备设备地址
+  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), ...);
+  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), ...);
+  // 4-6. 异步调度：分配显存 + 调用 ACLNN
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
+    [op, ...]() {
+      PyBoostUtils::MallocOpInputs(op->device_context(), op->stream_id(), ...);
+      PyBoostUtils::MallocOpOutputs(op->device_context(), op->stream_id(), ...);
+      LAUNCH_ACLNN(aclnnXxx, op->device_context(), op->stream_id(), ...);
+    }));
+  return op->output(0);
+}
+```
+
+### 5.5 LAUNCH_ACLNN 宏
+定义在 `ops/kernel/ascend/aclnn/pyboost_impl/aclnn_utils.h`，内部通过 ACLNN executor 调用对应 `aclnn*` C 接口。
+
+### 5.6 调用链（Python → ACLNN）
+```
+Python: ops.xxx(...)
+  → pybind: xxx_Base → xxx_OP → DispatchOp
+    → kernel::pyboost::Xxx → OpFactory<Xxx>::Create(Ascend)
+      → XxxAscend::Call()
+        → XxxAscendCustomize(op, args...)  [路径2]
+        → 或直接 LAUNCH_ACLNN(aclnnXxx)    [路径1]
+```
+
+### 5.7 输入参数转换
+- tuple/list：统一转为 `std::vector<int64_t>` 再传给 ACLNN
+- 可选输入：若允许 None，需定义"None 语义"，并在 PyBoost/Infer/KBK 同步处理
+
+## 6. KBK（Graph）kernel 要点（基于源码分析）
 
 > Init/Resize/Launch 职责分离、无意义输出、compute-depend 输出等优化要点见 §16。
 
-推荐固定结构：
-- `GetWorkSpaceInfo()`：取参 + `GetWorkspaceForResize`
-- `Launch()`：调用 `RunOp` 或等价执行路径
-- 注册：`MS_ACLNN_KERNEL_FACTORY_REG`（或项目等价宏）
+### 6.1 目录结构
 
-强约束：
-- 前向/反向分文件、分注册
-- 头/实现命名空间保持一致（否则易出现"未声明/未定义"）
+| 场景 | 路径 | 命名 |
+| --- | --- | --- |
+| 路径 1（自动生成） | `ops/kernel/ascend/aclnn/kernel_mod_impl/aclnn_auto_gen/` | `{op}_aclnn_kernel.h/.cc` |
+| 路径 2（Customize） | `ops/kernel/ascend/aclnn/kernel_mod_impl/customize/` | `{op}_aclnn_kernel.h/.cc` |
+| 基类与宏 | `ops/kernel/ascend/aclnn/kernel_mod_impl/aclnn_kernel_mod.h` | - |
 
-### 6.1 KBK 自动生成骨架位置提示
-从经验文档示例看，KBK 的自动生成代码常落在类似目录（以实际仓库为准）：
-- `.../ops/kernel/ascend/opapi/aclnn_auto_gen/`
-你可以先让 `gen_ops.py` 自动生成，再拷贝到自定义目录改造（见 §2.5）。
+### 6.2 基类与必须重写的方法
 
-## 7. BPROP 接线要点
+基类：`AclnnKernelMod`（定义在 `aclnn_kernel_mod.h`）
+
+```cpp
+class XxxAscend : public AclnnKernelMod {
+  void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                        const std::vector<KernelTensor *> &outputs) override;
+  bool Launch(const std::vector<KernelTensor *> &inputs,
+              const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs,
+              void *stream_ptr) override;
+ private:
+  DEFINE_GET_WORKSPACE_FOR_RESIZE()  // 单输出宏
+  // 多输出用 DEFINE_GET_WORKSPACE_FOR_OPS
+};
+```
+
+`Init` 和 `Resize` 由基类处理，一般不需要重写。
+
+### 6.3 注册宏
+
+| 宏 | 用途 | 示例 |
+| --- | --- | --- |
+| `MS_ACLNN_KERNEL_FACTORY_REG(NAME, CLASS)` | Customize kernel 注册 | `MS_ACLNN_KERNEL_FACTORY_REG(Conv2DExt, Conv2DExtAscend)` |
+| `MS_ACLNN_COMMON_KERNEL_FACTORY_REG(NAME, TYPE, N)` | 路径 1 通用注册（模板类） | `MS_ACLNN_COMMON_KERNEL_FACTORY_REG(RealDiv, aclnnDiv, 3)` |
+
+### 6.4 输入取参方式
+KBK 通过 `KernelTensor` 按索引取参，需要定义索引常量：
+```cpp
+constexpr size_t kInputQueryIndex = 0;
+constexpr size_t kInputKeyIndex = 1;
+// ...
+auto query = device::ascend::ConvertKernelTensor<int64_t>(inputs[kInputQueryIndex]);
+```
+
+### 6.5 强约束
+- 前向/反向**分文件、分注册**
+- 头/实现命名空间保持一致（否则"未声明/未定义"）
+- `aclnn_auto_gen/` 目录在 `.gitignore` 中，生成产物不提交
+
+## 7. BPROP 接线要点（基于源码分析）
 
 > 反向实现的进阶注意事项（OutZeros/ZerosLikeExt/inplace/Depend）另见 §14。
 
-在 bprop builder 中：
-- 只为需要梯度的输入构建反向子图
-- 非张量/不需要梯度的输入返回零梯度占位
-- 使用 `need_compute_grad_out()`（或等价接口）做必要性判断
+### 7.0 注册位置与宏
+- **实现目录**：`ccsrc/frontend/expander/grad/grad_*.cc`（按算子类别分文件）
+- **宏定义**：`ccsrc/frontend/expander/bprop/bprop_irbuilder.h`
 
-### 7.1 反向输入/输出个数经验规则（来自 `算子流程/.../aclnn开发示例.md`）
-- **反向输入个数**：等于"正向输入个数 + 2"（`out` 与 `dout`）。
-- **反向输出个数**：等于"正向输入个数"（每个输入一个梯度）。
-- 多输出正向算子：`out` 在反向侧通常是 tuple，需要通过 `TupleGetItem` 取对应输出。
+```cpp
+REG_BPROP_BUILDER("OpName").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(i0);
+  // ... 构建反向子图
+  return {grad_x, ib->OutZeros(y), ...};
+});
+```
 
-### 7.2 SetUnusedInputs 的使用场景
-当反向不依赖某些输入的 tensor value（只依赖 shape/type 或完全没用到）时，可标记为 unused，以便
-Pynative 异步场景更早释放正向 kernel 内存，降低峰值。
+关联方式：以前向 Primitive 名字符串为 key（`REG_BPROP_BUILDER("SparseFlashAttention")`）。
+
+### 7.1 ib-> 常用 API
+
+| API | 作用 |
+| --- | --- |
+| `ib->GetInput(iN)` | 获取第 N 个输入 |
+| `ib->Emit("OpName", {args...}, attrs)` | 发射一个 CNode（调用算子） |
+| `ib->OutZeros(node)` | 返回全零梯度（等价 `ZerosLike`） |
+| `ib->TupleGetItem(tuple, i)` | 从 tuple 取第 i 个元素 |
+| `ib->Value(val)` | 创建标量/常量 ValueNode |
+| `ib->MakeTuple(inputs)` | 构造 Tuple |
+| `ib->ZerosLike(node)` / `ib->ZerosLikeExt()` | 同形状零张量 |
+| `ib->Add/Sub/Mul/Div` | 算术运算 |
+| `ib->Reshape/Transpose/Cast` | 张量变换 |
+| `ib->GetShape/GetDtype/GetRank` | 形状与类型信息 |
+
+### 7.2 反向输入/输出个数规则
+- **反向输入个数** = 正向输入个数 + 2（`out` 与 `dout`）
+- **反向输出个数** = 正向输入个数（每个输入一个梯度）
+- 多输出正向算子：`out` 在反向侧是 tuple，用 `TupleGetItem` 取对应输出
+
+### 7.3 SetUnusedInputs（⚠️ 已标记 DEPRECATED）
+
+源码中 `SetUnusedInputs` 已标记为 DEPRECATED（`bprop_irbuilder.h`）。
+当前仍可使用，但**推荐使用替代 API**：
+
+| 旧 API | 替代 API | 说明 |
+| --- | --- | --- |
+| `SetUnusedInputs({i5, i16})` | `FreeUselessValues_I({i5, i16})` | 释放未用输入 |
+| - | `FreeUselessValues_O({o0})` | 释放未用输出 |
+| - | `FreeUselessValues_IO(in, out)` | 同时指定输入和输出 |
+| - | `FreeUselessValues(func)` | 自定义 `PynativeCallback` 释放逻辑 |
+
+语义：标记 bprop 中未使用的输入索引，PyNative 下提前释放设备内存以降低峰值。
 
 ## 8. 测试策略（UT + ST）
 
@@ -1246,3 +1457,12 @@ Pre-B 阶段：
 
 - 模板文件：`templates/feature-document.md`
 - 参考实例：用户提供的已有 Feature 文档（建议在开发前找到相似算子的 Feature 作参考）
+
+## 31. Skill 维护策略
+
+本节约定 skill 各文件的体量分工、反馈与更新、维护者溯源，避免说明散落多处。
+
+- **SKILL 体量**：SKILL.md 严控在 500 行内；细节、案例、背景知识解耦到本文件（reference.md）或 `examples.md`，需要时再按章节读取，避免把主入口撑得过长。
+- **reference 的定位**：本文件提供可按图索骥的细节与模板，按需查阅；内容来源于原始文档，已由 `traceability.md` 做溯源映射。
+- **反馈与更新**：使用中遇到 skill 指引与实际不符时，直接告诉 AI 具体情况（哪个算子、卡在哪步、实际做法）；AI 会按 SKILL 中的反馈收集机制评估是否需要更新 skill、更新哪些文件。常见排障可补充到本文件对应章节。
+- **维护者溯源**：修改或核对某条要求的来源时，见 `traceability.md`（源文档 → skill 落点对应表）。源文档不随 skill 分发，仅维护时参考。
