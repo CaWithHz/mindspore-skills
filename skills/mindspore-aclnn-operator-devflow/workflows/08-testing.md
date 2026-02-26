@@ -79,6 +79,13 @@
 | 组合级-最终输出 | 标准 ST 对齐 |
 | 反向级 | 反向 ST + 数值梯度检查 |
 
+### Step 7：按需补充（来自源文档 3/4/7）
+
+- **反向调试**：若需查看 bprop 图，可设 `context.set_context(save_graphs=True, save_graphs_path='./')`，13_execute_*.ir 为后端图（见 3. 算子开发 3.4.3）。
+- **动态 shape 自验**：用 `net.set_inputs(Tensor(shape=[3, None], dtype=...))` 等设定编译期动态维度，再传实际输入运行（见 4. 算子关键特性 4.2）。
+- **性能自验（按需）**：整网打点用 `start_hook_net(hook_inside)`（须在网络执行前）；单 API 打点用 `start_analysis()`/`end_analysis()` 包住循环。见 `reference.md` §12、7. 接口性能自验工具。
+- **vmap（按需）**：若算子需 vmap，见 `reference.md` §23（注册 VmapRule、结果/IR/效率自验、性能自测表）。
+
 ---
 
 ## 需要用户配合的环节

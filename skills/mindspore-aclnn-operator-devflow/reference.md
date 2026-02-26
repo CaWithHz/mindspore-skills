@@ -612,6 +612,40 @@ REG_BPROP_BUILDER("OpName").SetBody(BODYFUNC(ib) {
 - 新增 mint：需要同时处理 mint 的中英文列表与中文 rst（若是 import 原有接口可复用）。
 - 新增 Tensor 方法：英文在 `tensor.py`，中文在 `docs/api/api_python/mindspore/Tensor/`，并更新列表。
 
+### 11.3 开始前了解事项（来自参考资料 5.1）
+1. **明确开发场景**：在 §11.4 表格中找到对应场景，完成该场景下的英文 + 中文 + 接口列表全部任务；**所有文档修改建议同一 PR**（接口列表易冲突可另起 PR，但需同日合入）。
+2. **写作前必读**：参考资料中的中英文 API **内容要求**与**格式要求**链接，避免低级问题。
+3. **中英文内容一致**：参数、默认值、必选/可选、示例等必须一致；格式按中英文各自要求（见 §11.6）。
+4. **自检与预览**：提交 PR 后可在 PR 下评论 `/build_api_doc` 生成官网风格预览（mint 对接开发中）。
+5. **检视**：资料完成后找 API 文档负责人检视；**低级问题过多不接收检视**，提交前先自检。
+6. **友商参考**（避免思维定式）：如 tf.raw_ops.ScatterNd、torch.nn.Conv1d。
+7. **合入后自检**：PR 合入约两日后，到官网 Python API br_base / C++ API br_base 页面确认自己写的 API 展示正确，再转测。
+
+### 11.4 按场景落点（六种开发场景，来自参考资料 5.2）
+
+| 场景 | 英文 API 位置 | 英文接口列表 | 中文 RST 位置 | 中文接口列表 |
+| --- | --- | --- | --- | --- |
+| **mint** | 原 ops/nn 实现 .py 或 yaml | `docs/api/api_python_en/mindspore.mint.rst` | `docs/api/api_python/mint/` 下以接口名命名的 rst，**仅 mint 模块需 func_ 前缀** | `docs/api/api_python/mindspore.mint.rst` |
+| **functional** | 接口实现 .py | `docs/api/api_python_en/mindspore.ops.rst` | `docs/api/api_python/ops/` 下 **func_ 前缀** rst | `docs/api/api_python/mindspore.ops.rst` |
+| **nn** | 接口实现 .py | `docs/api/api_python_en/mindspore.nn.rst` | `docs/api/api_python/nn/` 下以接口名命名 | `docs/api/api_python/mindspore.nn.rst` |
+| **Tensor 方法** | `mindspore/python/mindspore/common/tensor.py` | `docs/api/api_python_en/mindspore/mindspore.Tensor.rst` | `docs/api/api_python/mindspore/Tensor/`，method/property 分开 | `docs/api/api_python/mindspore/mindspore.Tensor.rst` |
+| **C++ PrimitiveC** | 算子 .h 头文件（`\brief`、类内方法描述） | — | — | — |
+| **ops Primitive** | 接口实现 .py | `docs/api/api_python_en/mindspore.ops.primitive.rst` | `docs/api/api_python/ops/` 下**无 func_ 前缀**（如 `mindspore.ops.Add.rst`） | `docs/api/api_python/mindspore.ops.primitive.rst` |
+
+### 11.5 mint 特例（参考资料 5.2.1 注）
+- **ops.xxx_ext / nn.xxxExt**：若功能与原不带 ext 有差异需特别说明；若仅参数名或默认值不同，在参数说明中体现即可。
+- **import 原接口到 mint**：若为直接 `from mindspore.ops.xxx` 或 `from mindspore.nn.xxx` 无 `as` 的复用，**中文 rst 可不写**，资料生成时会从 ops/nn 拷贝。
+- **mint 样例代码**（除 mint.optim 外）：只写**原 ops/nn 接口**的样例，资料生成时会替换成 mint。写作格式必须为：`from mindspore import ops` + `ops.xxx()` / `ops.xxx_ext()` 等，或 `from mindspore import nn` + `nn.xxx()` / `nn.xxxExt()` 等；`import mindspore.ops as ops` 会替换为 `from mindspore import mint`。替换规则见参考资料 5.2.1 中的「原接口 → 替换成 mint 接口」表格。
+- **mint 与 mint.nn.functional / mint.linalg 同时展示**：需在接口列表中分别添加 `mindspore.mint.xxx` 与 `mindspore.mint.nn.functional.xxx`（或 `mindspore.mint.linalg.xxx`）。
+- **mint 分类**：所有分类参考 PyTorch（mint↔torch，mint.nn↔torch.nn，mint.nn.functional↔torch.nn.functional，mint.optim↔torch.optim）。
+- **YAML 方式接口**：写作指导见参考资料中给出的 Gitee 链接（yaml 方式实现接口）。
+
+### 11.6 常见问题摘要（参考资料 5.3，避免低级问题）
+
+**内容**：接口描述建议含原理、公式、论文出处或配图；primitive 文档要求给出公式并解释公式参数。实验性接口需在描述中说明（中文：这是一个实验性API，后续可能修改或删除；英文：This is an experimental API that is subject to change or deletion）。英文 API 需写明支持平台和样例；中文不需写，生成时从英文提取。样例代码需**完整 import**、典型完整且可运行，必要时展示输出或 shape。
+
+**格式**：文件名、文件内标题名、文件内接口定义三者**严格一致**（function 仅文件名多 func_ 前缀）；接口名下方 `=` 长度 ≥ 标题名。参数严格与代码对应，个数与名称完全对应；ops/nn 分为 Args、Inputs、Outputs；function/Tensor 分为 Args、Returns。Args 和 Raises 内容换行需缩进 4 个空格。一般变量和接口名用一个反引号 \` 包裹；参数取值用两个反引号 \`\` 包裹。中文 RST 中被 \` 或 \`\` 包裹的内容需与前后各留一个空格。描述中提及 MindSpore 接口时用内部跳转（:class:\`mindspore.ops.AvgPool\`、:func:\`mindspore.ops.avg_pool1d\`）。中文描述除代码相关外使用中文标点。描述具体 shape 时使用 :math:\`(x, x, x)\` 格式。Python 接口若 Class 下子方法不对外，可通过方法名前加 `_` 或删除方法注释实现。
+
 ## 12. 性能自验工具 apitimewrapper（来自 `算子流程/.../7. 接口性能自验工具.md`）
 
 ### 12.1 用途
@@ -809,7 +843,7 @@ MindSpore 接口命名空间（来自 `5. 资料开发指导.md`）：
 - 与框架相关负责人确认后，如结论是"允许带问题转测"，需要形成会议纪要并抄送相关人员。
 - 会议纪要建议包含：议题、时间、人员、背景、结论。
 
-## 21. 质量门禁与格式要求（结合项目 `.cursorrules`）
+## 21. 质量门禁与格式要求（与本 skill 核心行为准则一致，见 SKILL 核心行为准则）
 
 建议在 checklist 中显式跟踪这些点：
 - 行长不超过 120；避免行尾空格；尽量统一空格缩进。
@@ -1463,6 +1497,6 @@ Pre-B 阶段：
 本节约定 skill 各文件的体量分工、反馈与更新、维护者溯源，避免说明散落多处。
 
 - **SKILL 体量**：SKILL.md 严控在 500 行内；细节、案例、背景知识解耦到本文件（reference.md）或 `examples.md`，需要时再按章节读取，避免把主入口撑得过长。
-- **reference 的定位**：本文件提供可按图索骥的细节与模板，按需查阅；内容来源于原始文档，已由 `traceability.md` 做溯源映射。
+- **reference 的定位**：本文件提供可按图索骥的细节与模板，按需查阅；内容来源于原始文档，已由 `traceability.md` 做溯源映射。**本文件多为摘要**，细节以源文档为准；凡 workflow 对应单一明确源文档时，维护或全面检查时应用源文档逐节核对 workflow/checklists，避免仅依赖本文件摘要导致遗漏（见 `traceability.md`「Workflow 与源文档对齐」）。
 - **反馈与更新**：使用中遇到 skill 指引与实际不符时，直接告诉 AI 具体情况（哪个算子、卡在哪步、实际做法）；AI 会按 SKILL 中的反馈收集机制评估是否需要更新 skill、更新哪些文件。常见排障可补充到本文件对应章节。
-- **维护者溯源**：修改或核对某条要求的来源时，见 `traceability.md`（源文档 → skill 落点对应表）。源文档不随 skill 分发，仅维护时参考。
+- **维护者溯源**：修改或核对某条要求的来源时，见 `traceability.md`（源文档 → skill 落点对应表；**Workflow 与源文档对齐状态表**）。源文档不随 skill 分发，仅维护时参考。
